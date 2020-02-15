@@ -1,0 +1,23 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ template "validator.fullname" . }}
+  labels:
+    app: {{ template "validator.name" . }}
+    chart: {{ template "validator.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  schedule: "0 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: {{ template "validator.fullname" . }}
+            image: alpine
+            args:
+            - /bin/sh
+            - -c
+            - apk add curl && curl {{ template "validator.fullname" . }}:8080/api/v1/reloadMainDB
+          restartPolicy: OnFailure

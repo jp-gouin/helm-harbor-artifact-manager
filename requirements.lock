@@ -1,0 +1,6 @@
+dependencies:
+- name: etcd
+  repository: https://harbor.v2.rancher.geohub.space/chartrepo/i3s
+  version: 4.4.6
+digest: sha256:6c49c37688858b38e22473766dced014103dfbcc7c881107b94338f45aff7f89
+generated: 2019-12-22T17:07:34.3950403+01:00

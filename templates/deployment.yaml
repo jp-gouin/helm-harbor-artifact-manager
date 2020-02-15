@@ -1,0 +1,104 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+
+metadata:
+  name: {{ template "validator.fullname" . }}
+  labels:
+    app: {{ template "validator.name" . }}
+    chart: {{ template "validator.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "validator.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "validator.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      imagePullSecrets: 
+      - name: {{ .Values.image.pullSecret }} 
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        - name: httpgo
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: ETCD
+          value: {{ template "validator.etcd.fullname" . }}:2379
+        - name: HARBOR
+          value: {{ .Values.harborURI | quote }}
+        - name: USER
+          value: {{ .Values.harborUser | quote }}
+        - name: LDAPENABLE
+          value: {{ .Values.ldap.enabled | quote }}
+        - name: LDAPBASE
+          value: {{ .Values.ldap.base | quote }}
+        - name: LDAPHOST
+          value: {{ .Values.ldap.host | quote }}
+        - name: LDAPPORT
+          value: {{ .Values.ldap.port | quote }}
+        - name: LDAPDN
+          value: {{ .Values.ldap.binddn | quote }}
+        - name: LDAPSSL
+          value: {{ .Values.ldap.ssl | quote }}
+        - name: LDAPINSECURESKIP
+          value: {{ .Values.ldap.insecureSkipVerify | quote }}
+        - name: ADMINUSERNAME
+          value: {{ .Values.adminUsername | quote }}
+        - name: JWTKEY
+          value: {{ .Values.jwtApiKey | quote }}
+        - name: PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: "{{  template "validator.fullname" . }}"
+              key: PASSWORD
+        - name: LDAPBINDPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: "{{  template "validator.fullname" . }}"
+              key: LDAPBINDPASSWORD
+        - name: ADMINPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: "{{  template "validator.fullname" . }}"
+              key: ADMINPASSWORD
+        volumeMounts:
+          - name: config-volume
+            mountPath: /usr/share/backends-save-images.sh
+            subPath: backends-save-images.sh
+        livenessProbe:
+{{ toYaml .Values.livenessProbe | indent 12 }}
+        readinessProbe:
+{{ toYaml .Values.readinessProbe | indent 12 }}
+        resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+      volumes:
+        - name: config-volume
+          configMap:
+        # Provide the name of the ConfigMap containing the files you want
+        # to add to the container
+            name: {{ template "validator.fullname" . }}
